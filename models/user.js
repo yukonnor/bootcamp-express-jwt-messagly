@@ -1,61 +1,115 @@
 /** User class for message.ly */
 
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
+const ExpressError = require("../expressError");
+const db = require("../db");
+const { BCRYPT_WORK_FACTOR } = require("../config");
 
 /** User of the site. */
 
 class User {
+    constructor(username, password, firstName, lastName, phone, joinAt, lastLoginAt) {
+        this.username = username;
+        this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phone = phone;
+        this.joinAt = joinAt;
+        this.lastLoginAt = lastLoginAt;
+    }
 
-  /** register new user -- returns
-   *    {username, password, first_name, last_name, phone}
-   */
+    /** register new user -- returns instance of User
+     *
+     */
 
-  static async register({username, password, first_name, last_name, phone}) { }
+    static async register({ username, password, firstName, lastName, phone }) {
+        try {
+            const checkUsernameResult = await db.query(
+                `SELECT username FROM users WHERE username = $1`,
+                [username]
+            );
 
-  /** Authenticate: is this username/password valid? Returns boolean. */
+            // if a user already exists with that username, throw error.
+            if (checkUsernameResult.rows[0]) {
+                throw new Error("A user with that username already exists");
+            }
 
-  static async authenticate(username, password) { }
+            const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+            const newUserResult = await db.query(
+                `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
+                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()) 
+                 RETURNING join_at as joinAt, last_login_at as lastLoginAt`,
+                [username, hashedPassword, firstName, lastName, phone]
+            );
 
-  /** Update last_login_at for user */
+            // if no results something went wrong
+            if (!newUserResult.rows[0]) {
+                throw new Error("Something went wrong when attempting to create user record.");
+            }
 
-  static async updateLoginTimestamp(username) { }
+            // get the joinAt and lastLogin timestamps from SQL query results
+            let { joinAt, lastLoginAt } = newUserResult.rows[0];
 
-  /** All: basic info on all users:
-   * [{username, first_name, last_name, phone}, ...] */
+            return new User(
+                username,
+                hashedPassword,
+                firstName,
+                lastName,
+                phone,
+                joinAt,
+                lastLoginAt
+            );
+        } catch (err) {
+            console.error(err);
+            throw new ExpressError(err.message, 400);
+        }
+    }
 
-  static async all() { }
+    /** Authenticate: is this username/password valid? Returns boolean. */
 
-  /** Get: get user by username
-   *
-   * returns {username,
-   *          first_name,
-   *          last_name,
-   *          phone,
-   *          join_at,
-   *          last_login_at } */
+    static async authenticate(username, password) {}
 
-  static async get(username) { }
+    /** Update last_login_at for user */
 
-  /** Return messages from this user.
-   *
-   * [{id, to_user, body, sent_at, read_at}]
-   *
-   * where to_user is
-   *   {username, first_name, last_name, phone}
-   */
+    static async updateLoginTimestamp(username) {}
 
-  static async messagesFrom(username) { }
+    /** All: basic info on all users:
+     * [{username, first_name, last_name, phone}, ...] */
 
-  /** Return messages to this user.
-   *
-   * [{id, from_user, body, sent_at, read_at}]
-   *
-   * where from_user is
-   *   {username, first_name, last_name, phone}
-   */
+    static async all() {}
 
-  static async messagesTo(username) { }
+    /** Get: get user by username
+     *
+     * returns {username,
+     *          first_name,
+     *          last_name,
+     *          phone,
+     *          join_at,
+     *          last_login_at } */
+
+    static async get(username) {}
+
+    /** Return messages from this user.
+     *
+     * [{id, to_user, body, sent_at, read_at}]
+     *
+     * where to_user is
+     *   {username, first_name, last_name, phone}
+     */
+
+    static async messagesFrom(username) {}
+
+    /** Return messages to this user.
+     *
+     * [{id, from_user, body, sent_at, read_at}]
+     *
+     * where from_user is
+     *   {username, first_name, last_name, phone}
+     */
+
+    static async messagesTo(username) {}
 }
-
 
 module.exports = User;
