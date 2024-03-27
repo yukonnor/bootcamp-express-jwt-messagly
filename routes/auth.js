@@ -8,7 +8,7 @@ const User = require("../models/user");
 
 /** POST /login - login: {username, password} => {token}
  *
- * Make sure to update their last-login!
+ * Also updates user's last-login timestamp.
  *
  **/
 
@@ -18,6 +18,10 @@ router.post("/login", async function (req, res, next) {
         const authenticated = await User.authenticate(username, password);
 
         if (authenticated) {
+            const user = await User.get(username);
+
+            await user.updateLoginTimestamp();
+
             let token = jwt.sign({ username }, SECRET_KEY, JWT_OPTIONS);
             return res.json({ token });
         }

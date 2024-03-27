@@ -120,7 +120,7 @@ class User {
     static async all() {
         try {
             const result = await db.query(
-                `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                `SELECT username, password, first_name, last_name, phone, join_at, last_login_at 
                  FROM users`
             );
             return result.rows.map(
@@ -128,7 +128,7 @@ class User {
                     new User(
                         user.username,
                         user.password,
-                        user.fist_name,
+                        user.first_name,
                         user.last_name,
                         user.phone,
                         user.join_at,
@@ -148,7 +148,7 @@ class User {
     static async get(username) {
         try {
             const userResult = await db.query(
-                `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                `SELECT username, password, first_name, last_name, phone, join_at, last_login_at 
                  FROM users
                  WHERE username = $1 `,
                 [username]
@@ -163,7 +163,7 @@ class User {
             return new User(
                 user.username,
                 user.password,
-                user.fist_name,
+                user.first_name,
                 user.last_name,
                 user.phone,
                 user.join_at,
@@ -198,7 +198,7 @@ class User {
             const messages = await Promise.all(
                 messageResult.rows.map(async (message) => {
                     const toUserResult = await db.query(
-                        `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                        `SELECT username, password, first_name, last_name, phone, join_at, last_login_at 
                      FROM users
                      WHERE username = $1 `,
                         [message.to_username]
@@ -212,7 +212,7 @@ class User {
                         to_user: new User(
                             toUser.username,
                             toUser.password,
-                            toUser.fist_name,
+                            toUser.first_name,
                             toUser.last_name,
                             toUser.phone,
                             toUser.join_at,
@@ -256,7 +256,7 @@ class User {
             const messages = await Promise.all(
                 messageResult.rows.map(async (message) => {
                     const fromUserResult = await db.query(
-                        `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                        `SELECT username, password, first_name, last_name, phone, join_at, last_login_at 
                          FROM users
                          WHERE username = $1 `,
                         [message.from_username]
@@ -270,7 +270,7 @@ class User {
                         from_user: new User(
                             fromUser.username,
                             fromUser.password,
-                            fromUser.fist_name,
+                            fromUser.first_name,
                             fromUser.last_name,
                             fromUser.phone,
                             fromUser.join_at,
