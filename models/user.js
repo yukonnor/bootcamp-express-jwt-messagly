@@ -170,21 +170,116 @@ class User {
      *
      * [{id, to_user, body, sent_at, read_at}]
      *
-     * where to_user is
-     *   {username, first_name, last_name, phone}
+     * where to_user is a User instance
      */
 
-    static async messagesFrom(username) {}
+    async messagesFrom() {
+        try {
+            const messageResult = await db.query(
+                `SELECT id, to_username, body, sent_at, read_at 
+                 FROM messages
+                 WHERE from_username = $1 `,
+                [this.username]
+            );
+
+            if (!messageResult.rows[0]) {
+                throw new ExpressError("Couldn't find messages from this user.", 404);
+            }
+
+            const messages = await Promise.all(
+                messageResult.rows.map(async (message) => {
+                    const toUserResult = await db.query(
+                        `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                     FROM users
+                     WHERE username = $1 `,
+                        [message.to_username]
+                    );
+
+                    const toUser = toUserResult.rows[0];
+
+                    // return one message object per message
+                    return {
+                        id: message.id,
+                        to_user: new User(
+                            toUser.username,
+                            toUser.password,
+                            toUser.fist_name,
+                            toUser.last_name,
+                            toUser.phone,
+                            toUser.join_at,
+                            toUser.last_login_at
+                        ),
+                        body: message.body,
+                        sent_at: message.sent_at,
+                        read_at: message.read_at,
+                    };
+                })
+            );
+
+            return messages;
+        } catch (err) {
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
+        }
+    }
 
     /** Return messages to this user.
      *
      * [{id, from_user, body, sent_at, read_at}]
      *
-     * where from_user is
-     *   {username, first_name, last_name, phone}
+     * where from_user is a User instance
+     *
      */
 
-    static async messagesTo(username) {}
+    async messagesTo(username) {
+        try {
+            const messageResult = await db.query(
+                `SELECT id, from_username, body, sent_at, read_at 
+             FROM messages
+             WHERE to_username = $1 `,
+                [this.username]
+            );
+
+            if (!messageResult.rows[0]) {
+                throw new ExpressError("Couldn't find messages to this user.", 404);
+            }
+
+            const messages = await Promise.all(
+                messageResult.rows.map(async (message) => {
+                    const fromUserResult = await db.query(
+                        `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                         FROM users
+                         WHERE username = $1 `,
+                        [message.from_username]
+                    );
+
+                    const fromUser = fromUserResult.rows[0];
+
+                    // return one message object per message
+                    return {
+                        id: message.id,
+                        from_user: new User(
+                            fromUser.username,
+                            fromUser.password,
+                            fromUser.fist_name,
+                            fromUser.last_name,
+                            fromUser.phone,
+                            fromUser.join_at,
+                            fromUser.last_login_at
+                        ),
+                        body: message.body,
+                        sent_at: message.sent_at,
+                        read_at: message.read_at,
+                    };
+                })
+            );
+
+            return messages;
+        } catch (err) {
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
+        }
+    }
 }
 
 module.exports = User;
