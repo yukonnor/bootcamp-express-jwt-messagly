@@ -31,15 +31,18 @@ class User {
                 [username]
             );
 
+            console.log(checkUsernameResult.rows);
+
             // if a user already exists with that username, throw error.
             if (checkUsernameResult.rows[0]) {
                 throw new ExpressError("A user with that username already exists", 400);
             }
 
             const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+            console.log(hashedPassword);
             const newUserResult = await db.query(
                 `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
-                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()) 
+                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
                  RETURNING join_at, last_login_at`,
                 [username, hashedPassword, first_name, last_name, phone]
             );
@@ -65,7 +68,9 @@ class User {
                 last_login_at
             );
         } catch (err) {
-            return next(err);
+            console.log("In catch of register user method...");
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
         }
     }
 
@@ -85,7 +90,8 @@ class User {
 
             throw new ExpressError("Couldn't find user with that username.", 404);
         } catch (err) {
-            return next(err);
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
         }
     }
 
@@ -94,7 +100,7 @@ class User {
     async updateLoginTimestamp() {
         try {
             const userResult = await db.query(
-                `UPDATE users SET last_login_at = CURRENT_TIMESTAMP() WHERE username = $1 
+                `UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE username = $1 
                  RETURNING last_login_at`,
                 [this.username]
             );
@@ -103,7 +109,8 @@ class User {
                 throw new ExpressError("Couldn't find user with that username.", 404);
             }
         } catch (err) {
-            return next(err);
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
         }
     }
 
@@ -129,7 +136,8 @@ class User {
                     )
             );
         } catch (err) {
-            return next(err);
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
         }
     }
 
@@ -162,7 +170,8 @@ class User {
                 user.last_login_at
             );
         } catch (err) {
-            return next(err);
+            // error will be caught by route handler and sent to error handler middleware there.
+            throw err;
         }
     }
 
