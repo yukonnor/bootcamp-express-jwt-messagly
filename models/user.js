@@ -31,15 +31,12 @@ class User {
                 [username]
             );
 
-            console.log(checkUsernameResult.rows);
-
             // if a user already exists with that username, throw error.
             if (checkUsernameResult.rows[0]) {
                 throw new ExpressError("A user with that username already exists", 400);
             }
 
             const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
-            console.log(hashedPassword);
             const newUserResult = await db.query(
                 `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
                  VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
@@ -68,7 +65,6 @@ class User {
                 last_login_at
             );
         } catch (err) {
-            console.log("In catch of register user method...");
             // error will be caught by route handler and sent to error handler middleware there.
             throw err;
         }
@@ -108,6 +104,8 @@ class User {
             if (!userResult.rows[0]) {
                 throw new ExpressError("Couldn't find user with that username.", 404);
             }
+
+            this.last_login_at = userResult.rows[0];
         } catch (err) {
             // error will be caught by route handler and sent to error handler middleware there.
             throw err;
@@ -204,20 +202,26 @@ class User {
                         [message.to_username]
                     );
 
-                    const toUser = toUserResult.rows[0];
+                    const toUserRow = toUserResult.rows[0];
+                    const toUser = new User(
+                        toUserRow.username,
+                        toUserRow.password,
+                        toUserRow.first_name,
+                        toUserRow.last_name,
+                        toUserRow.phone,
+                        toUserRow.join_at,
+                        toUserRow.last_login_at
+                    );
 
                     // return one message object per message
                     return {
                         id: message.id,
-                        to_user: new User(
-                            toUser.username,
-                            toUser.password,
-                            toUser.first_name,
-                            toUser.last_name,
-                            toUser.phone,
-                            toUser.join_at,
-                            toUser.last_login_at
-                        ),
+                        to_user: {
+                            username: toUser.username,
+                            first_name: toUser.first_name,
+                            last_name: toUser.last_name,
+                            phone: toUser.phone,
+                        },
                         body: message.body,
                         sent_at: message.sent_at,
                         read_at: message.read_at,
@@ -262,20 +266,26 @@ class User {
                         [message.from_username]
                     );
 
-                    const fromUser = fromUserResult.rows[0];
+                    const fromUserRow = fromUserResult.rows[0];
+                    const fromUser = new User(
+                        fromUserRow.username,
+                        fromUserRow.password,
+                        fromUserRow.first_name,
+                        fromUserRow.last_name,
+                        fromUserRow.phone,
+                        fromUserRow.join_at,
+                        fromUserRow.last_login_at
+                    );
 
                     // return one message object per message
                     return {
                         id: message.id,
-                        from_user: new User(
-                            fromUser.username,
-                            fromUser.password,
-                            fromUser.first_name,
-                            fromUser.last_name,
-                            fromUser.phone,
-                            fromUser.join_at,
-                            fromUser.last_login_at
-                        ),
+                        from_user: {
+                            username: fromUser.username,
+                            first_name: fromUser.first_name,
+                            last_name: fromUser.last_name,
+                            phone: fromUser.phone,
+                        },
                         body: message.body,
                         sent_at: message.sent_at,
                         read_at: message.read_at,

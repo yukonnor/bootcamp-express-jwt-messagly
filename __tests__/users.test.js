@@ -1,8 +1,8 @@
+process.env.NODE_ENV = "test";
+
 const db = require("../db");
 const User = require("../models/user");
 const Message = require("../models/message");
-
-process.env.NODE_ENV = "test";
 
 describe("Test User class", function () {
     beforeEach(async function () {
@@ -43,9 +43,8 @@ describe("Test User class", function () {
         let u = await User.get("test");
         expect(u.last_login_at).toBe(null);
 
-        User.updateLoginTimestamp("test");
-        let u2 = await User.get("test");
-        expect(u2.last_login_at).not.toBe(null);
+        await u.updateLoginTimestamp();
+        expect(u.last_login_at).not.toBe(null);
     });
 
     test("can get", async function () {
@@ -57,6 +56,7 @@ describe("Test User class", function () {
             phone: "+14155550000",
             last_login_at: expect.any(Date),
             join_at: expect.any(Date),
+            password: expect.any(String),
         });
     });
 
@@ -68,6 +68,9 @@ describe("Test User class", function () {
                 first_name: "Test",
                 last_name: "Testy",
                 phone: "+14155550000",
+                last_login_at: expect.any(Date),
+                join_at: expect.any(Date),
+                password: expect.any(String),
             },
         ]);
     });
@@ -106,7 +109,8 @@ describe("Test messages part of User class", function () {
     });
 
     test("can get messages from user", async function () {
-        let m = await User.messagesFrom("test1");
+        let user = await User.get("test1");
+        let m = await user.messagesFrom();
         expect(m).toEqual([
             {
                 id: expect.any(Number),
@@ -124,7 +128,8 @@ describe("Test messages part of User class", function () {
     });
 
     test("can get messages to user", async function () {
-        let m = await User.messagesTo("test1");
+        let user = await User.get("test1");
+        let m = await user.messagesTo();
         expect(m).toEqual([
             {
                 id: expect.any(Number),
