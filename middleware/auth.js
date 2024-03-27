@@ -10,9 +10,6 @@ function authenticateJWT(req, res, next) {
         const tokenFromBody = req.body._token;
         const payload = jwt.verify(tokenFromBody, SECRET_KEY);
 
-        console.log("In auth middleware...");
-        console.log(payload);
-
         req.user = payload; // create a current user and append to req for use in next handler
         return next();
     } catch (err) {

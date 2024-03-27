@@ -25,8 +25,6 @@ router.get("/:id", ensureLoggedIn, async function (req, res, next) {
         const logged_in_username = req.user.username; // get from_username from token
         const message = await Message.get(req.params.id);
 
-        // console.log(logged_in_username, message, message.from_username, message.to_username);
-
         if (
             logged_in_username === message.from_user.username ||
             logged_in_username === message.to_user.username
@@ -70,8 +68,6 @@ router.post("/:id/read", ensureLoggedIn, async function (req, res, next) {
     try {
         const logged_in_username = req.user.username; // get from_username from token
         const foundMessage = await Message.get(req.params.id);
-
-        console.log(logged_in_username, foundMessage);
 
         if (logged_in_username === foundMessage.to_user.username) {
             const message = await Message.markRead(req.params.id);
