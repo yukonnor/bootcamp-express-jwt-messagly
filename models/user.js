@@ -10,21 +10,21 @@ const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
 /** User of the site. */
 
 class User {
-    constructor(username, password, firstName, lastName, phone, joinAt, lastLoginAt) {
+    constructor(username, password, first_name, last_name, phone, join_at, last_login_at) {
         this.username = username;
         this.password = password;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.first_name = first_name;
+        this.last_name = last_name;
         this.phone = phone;
-        this.joinAt = joinAt;
-        this.lastLoginAt = lastLoginAt;
+        this.join_at = join_at;
+        this.last_login_at = last_login_at;
     }
 
     /** register new user -- returns instance of User
      *
      */
 
-    static async register({ username, password, firstName, lastName, phone }) {
+    static async register({ username, password, first_name, last_name, phone }) {
         try {
             const checkUsernameResult = await db.query(
                 `SELECT username FROM users WHERE username = $1`,
@@ -40,8 +40,8 @@ class User {
             const newUserResult = await db.query(
                 `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)
                  VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()) 
-                 RETURNING join_at as joinAt, last_login_at as lastLoginAt`,
-                [username, hashedPassword, firstName, lastName, phone]
+                 RETURNING join_at, last_login_at`,
+                [username, hashedPassword, first_name, last_name, phone]
             );
 
             // if no results something went wrong
@@ -52,20 +52,19 @@ class User {
                 );
             }
 
-            // get the joinAt and lastLogin timestamps from SQL query results
-            let { joinAt, lastLoginAt } = newUserResult.rows[0];
+            // get the join_at and lastLogin timestamps from SQL query results
+            let { join_at, last_login_at } = newUserResult.rows[0];
 
             return new User(
                 username,
                 hashedPassword,
-                firstName,
-                lastName,
+                first_name,
+                last_name,
                 phone,
-                joinAt,
-                lastLoginAt
+                join_at,
+                last_login_at
             );
         } catch (err) {
-            console.error(err);
             return next(err);
         }
     }
@@ -84,50 +83,88 @@ class User {
                 return await bcrypt.compare(password, user.password);
             }
 
-            throw new ExpressError("Unable to find user.", 404);
+            throw new ExpressError("Couldn't find user with that username.", 404);
         } catch (err) {
-            console.error(err);
             return next(err);
         }
     }
 
-    /** Update lastLoginAt for user */
+    /** Update last_login_at for user */
 
     async updateLoginTimestamp() {
         try {
             const userResult = await db.query(
                 `UPDATE users SET last_login_at = CURRENT_TIMESTAMP() WHERE username = $1 
-                 RETURNING last_login_at as lastLoginAt`,
+                 RETURNING last_login_at`,
                 [this.username]
             );
 
             if (!userResult.rows[0]) {
-                throw new ExpressError(
-                    "Something went wrong when attempting to update user last_login_at.",
-                    400
-                );
+                throw new ExpressError("Couldn't find user with that username.", 404);
             }
         } catch (err) {
-            console.error(err);
             return next(err);
         }
     }
 
-    /** All: basic info on all users:
-     * [{username, first_name, last_name, phone}, ...] */
+    /** Return All: basic info on all users:
+     * [User, User] */
 
-    static async all() {}
+    static async all() {
+        try {
+            const result = await db.query(
+                `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                 FROM users`
+            );
+            return result.rows.map(
+                (user) =>
+                    new User(
+                        user.username,
+                        user.password,
+                        user.fist_name,
+                        user.last_name,
+                        user.phone,
+                        user.join_at,
+                        user.last_login_at
+                    )
+            );
+        } catch (err) {
+            return next(err);
+        }
+    }
 
     /** Get: get user by username
      *
-     * returns {username,
-     *          first_name,
-     *          last_name,
-     *          phone,
-     *          join_at,
-     *          last_login_at } */
+     * returns User instance */
 
-    static async get(username) {}
+    static async get(username) {
+        try {
+            const userResult = await db.query(
+                `SELECT username, password, fist_name, last_name, phone, join_at, last_login_at 
+                 FROM users
+                 WHERE username = $1 `,
+                [username]
+            );
+
+            const user = userResult.rows[0];
+
+            if (!user) {
+                throw new ExpressError("Couldn't find user with that username.", 404);
+            }
+
+            return new User(
+                user.username,
+                user.password,
+                user.fist_name,
+                user.last_name,
+                user.phone,
+                user.join_at,
+                user.last_login_at
+            );
+        } catch (err) {
+            return next(err);
+        }
+    }
 
     /** Return messages from this user.
      *
