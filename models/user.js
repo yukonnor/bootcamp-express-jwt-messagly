@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 
 const ExpressError = require("../expressError");
 const db = require("../db");
-const { BCRYPT_WORK_FACTOR } = require("../config");
+const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
 
 /** User of the site. */
 
@@ -33,7 +33,7 @@ class User {
 
             // if a user already exists with that username, throw error.
             if (checkUsernameResult.rows[0]) {
-                throw new Error("A user with that username already exists");
+                throw new ExpressError("A user with that username already exists", 400);
             }
 
             const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
@@ -46,7 +46,10 @@ class User {
 
             // if no results something went wrong
             if (!newUserResult.rows[0]) {
-                throw new Error("Something went wrong when attempting to create user record.");
+                throw new ExpressError(
+                    "Something went wrong when attempting to create user record.",
+                    400
+                );
             }
 
             // get the joinAt and lastLogin timestamps from SQL query results
@@ -63,13 +66,30 @@ class User {
             );
         } catch (err) {
             console.error(err);
-            throw new ExpressError(err.message, 400);
+            return next(err);
         }
     }
 
     /** Authenticate: is this username/password valid? Returns boolean. */
 
-    static async authenticate(username, password) {}
+    static async authenticate(username, password) {
+        try {
+            const userResult = await db.query("SELECT password FROM users WHERE username = $1", [
+                username,
+            ]);
+
+            let user = userResult.rows[0];
+
+            if (user) {
+                return await bcrypt.compare(password, user.password);
+            }
+
+            throw new ExpressError("Unable to find user.", 404);
+        } catch (err) {
+            console.error(err);
+            return next(err);
+        }
+    }
 
     /** Update last_login_at for user */
 
