@@ -91,9 +91,27 @@ class User {
         }
     }
 
-    /** Update last_login_at for user */
+    /** Update lastLoginAt for user */
 
-    static async updateLoginTimestamp(username) {}
+    async updateLoginTimestamp() {
+        try {
+            const userResult = await db.query(
+                `UPDATE users SET last_login_at = CURRENT_TIMESTAMP() WHERE username = $1 
+                 RETURNING last_login_at as lastLoginAt`,
+                [this.username]
+            );
+
+            if (!userResult.rows[0]) {
+                throw new ExpressError(
+                    "Something went wrong when attempting to update user last_login_at.",
+                    400
+                );
+            }
+        } catch (err) {
+            console.error(err);
+            return next(err);
+        }
+    }
 
     /** All: basic info on all users:
      * [{username, first_name, last_name, phone}, ...] */
