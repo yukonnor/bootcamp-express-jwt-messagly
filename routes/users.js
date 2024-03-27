@@ -6,7 +6,6 @@ const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
 const User = require("../models/user");
 const { ensureLoggedIn, ensureCorrectUser } = require("../middleware/auth");
 
-//- any
 //- only that user can view their get-user-detail route, or their from-messages or to-messages routes.
 
 /** GET / - get list of users.
@@ -17,18 +16,29 @@ const { ensureLoggedIn, ensureCorrectUser } = require("../middleware/auth");
 
 router.get("/", ensureLoggedIn, async function (req, res, next) {
     try {
-        return res.json({ message: "Made it!" });
+        const users = await User.all();
+        return res.json({ users });
     } catch (err) {
         return next(err);
     }
 });
 // end
 
-/** GET /:username - get detail of users.
- *
- * => {user: {username, first_name, last_name, phone, join_at, last_login_at}}
+/** GET /:username - get detail of a user.
+ *  Only that user can view their get-user-detail route.
+ *  => {user: {username, first_name, last_name, phone, join_at, last_login_at}}
  *
  **/
+
+router.get("/:username", ensureLoggedIn, ensureCorrectUser, async function (req, res, next) {
+    try {
+        const user = await User.get(req.params.username);
+        return res.json({ user });
+    } catch (err) {
+        return next(err);
+    }
+});
+// end
 
 /** GET /:username/to - get messages to user
  *

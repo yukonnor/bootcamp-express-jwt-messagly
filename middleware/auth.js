@@ -30,7 +30,7 @@ function ensureLoggedIn(req, res, next) {
     }
 }
 
-/** Middleware: Requires correct username. */
+/** Middleware: Requires logged in user to match username in params. */
 
 function ensureCorrectUser(req, res, next) {
     try {
